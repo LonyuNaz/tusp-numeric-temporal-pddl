@@ -1,6 +1,6 @@
 ;Header and description
 
-(define (domain dom_nt_1)
+(define (domain dom_nt_3)
 
 ;remove requirements that are not needed
 (:requirements 
@@ -14,26 +14,15 @@
 (:types 
     train - object
     track - object
-    driver - object
 )
 
 ; un-comment following line if constants are needed
 ;(:constants )
 
-(:predicates ;todo: define predicates here
-    ; driver
-    (idle ?driver - driver)
-
-    ; driver & train
-    (driving_train ?driver - driver ?train - train)
-
+(:predicates 
     ; train
     (is_active ?train - train)
-    (train_operated ?train - train)
-    (train_unoperated ?train - train)
     (is_available ?train - train)
-    (is_direction_Aside ?train - train)
-    (is_direction_Bside ?train - train)
     (is_parking ?train - train)
     (has_parked ?train - train)
 
@@ -46,7 +35,11 @@
 )
 
 
-(:functions ;todo: define numeric functions here
+(:functions 
+    ; general
+    (max_num_consecutive_movements)
+    (num_consecutive_movements)
+
     ; train
     (train_length ?train - train)
     (train_distance_to_end_of_track ?train - train)
@@ -56,125 +49,6 @@
     (stack_Aside_distance_to_end_of_track ?track - track)
     (stack_Bside_distance_to_end_of_track ?track - track)
     (num_trains_on_track ?track - track)
-)
-
-
-(:durative-action enter_train
-    :parameters (
-        ?driver - driver
-        ?train - train
-    )
-    :duration (= ?duration 1)
-    :condition (and 
-        (at start (and 
-            (is_available ?train)
-            (idle ?driver)
-        ))
-        (over all (and 
-            (is_active ?train)
-        ))
-    )
-    :effect (and 
-        (at start (and 
-            (not (is_available ?train))
-            (not (idle ?driver))
-        ))
-        (at end (and 
-            (is_available ?train)
-
-            (train_operated ?train)
-            (not (train_unoperated ?train))
-
-            (driving_train ?driver ?train)
-        ))
-    )
-)
-
-(:durative-action exit_train
-    :parameters (
-        ?driver - driver
-        ?train - train
-    )
-    :duration (= ?duration 1)
-    :condition (and 
-        (at start (and 
-            (is_available ?train)
-            (driving_train ?driver ?train)
-        ))
-        (over all (and 
-            (is_active ?train)
-        ))
-    )
-    :effect (and 
-        (at start (and 
-            (not (is_available ?train))
-            (not (driving_train ?driver ?train))
-        ))
-        (at end (and 
-            (is_available ?train)
-
-            (not (train_operated ?train))
-            (train_unoperated ?train)
-
-            (idle ?driver)
-        ))
-    )
-)
-
-(:durative-action turn_to_Aside
-    :parameters (
-        ?train - train
-    )
-    :duration (= ?duration 1)
-    :condition (and 
-        (at start (and 
-            (is_available ?train)
-            (is_direction_Bside ?train)
-        ))
-        (over all (and 
-            (is_active ?train)
-            (train_operated ?train)
-        ))
-    )
-    :effect (and 
-        (at start (and 
-            (not (is_available ?train))
-        ))
-        (at end (and 
-            (is_available ?train)
-
-            (not (is_direction_Bside ?train))
-            (is_direction_Aside ?train)
-        ))
-    )
-)
-
-(:durative-action turn_to_Bside
-    :parameters (
-        ?train - train
-    )
-    :duration (= ?duration 1)
-    :condition (and 
-        (at start (and 
-            (is_available ?train)
-            (is_direction_Aside ?train)
-        ))
-        (over all (and 
-            (is_active ?train)
-            (train_operated ?train)
-        ))
-    )
-    :effect (and 
-        (at start (and 
-            (not (is_available ?train))
-        ))
-        (at end (and 
-            (is_available ?train)
-
-            (not (is_direction_Aside ?train))
-            (is_direction_Bside ?train)
-        ))
-    )
 )
 
 (:durative-action start_parking_at
@@ -224,8 +98,6 @@
 )
 
 
-
-
 (:durative-action move_Aside_onto_empty_track
     :parameters (
         ?train - train
@@ -248,20 +120,22 @@
                 (track_length ?trackRight)
                 (train_length ?train)
             )
+
+            (<= (num_consecutive_movements) (max_num_consecutive_movements))
         ))
         (over all (and 
             (is_active ?train)
-            (train_operated ?train)
-            (is_direction_Aside ?train)
             (tracks_linked ?trackLeft ?trackRight)   
         ))
     )
     :effect (and 
         (at start (and 
             (not (is_available ?train))
+            (increase (num_consecutive_movements) 1)
         ))
         (at end (and 
             (is_available ?train)
+            (decrease (num_consecutive_movements) 1)
 
             (not (train_at ?train ?trackLeft))
             (train_at ?train ?trackRight)
@@ -303,20 +177,22 @@
                 )
                 (train_length ?train)
             )
+
+            (<= (num_consecutive_movements) (max_num_consecutive_movements))
         ))
         (over all (and 
             (is_active ?train)
-            (train_operated ?train)
-            (is_direction_Aside ?train)
             (tracks_linked ?trackLeft ?trackRight)   
         ))
     )
     :effect (and 
         (at start (and 
             (not (is_available ?train))
+            (increase (num_consecutive_movements) 1)
         ))
         (at end (and 
             (is_available ?train)
+            (decrease (num_consecutive_movements) 1)
 
             (not (train_at ?train ?trackLeft))
             (train_at ?train ?trackRight)
@@ -360,20 +236,22 @@
                 (track_length ?trackLeft)
                 (train_length ?train)
             )
+
+            (<= (num_consecutive_movements) (max_num_consecutive_movements))
         ))
         (over all (and 
             (is_active ?train)
-            (train_operated ?train)
-            (is_direction_Bside ?train)
             (tracks_linked ?trackLeft ?trackRight)   
         ))
     )
     :effect (and 
         (at start (and 
             (not (is_available ?train))
+            (increase (num_consecutive_movements) 1)
         ))
         (at end (and 
             (is_available ?train)
+            (decrease (num_consecutive_movements) 1)
 
             (not (train_at ?train ?trackRight))
             (train_at ?train ?trackLeft)
@@ -419,11 +297,11 @@
                 (stack_Aside_distance_to_end_of_track ?trackLeft)
                 (train_length ?train)
             )
+
+            (<= (num_consecutive_movements) (max_num_consecutive_movements))
         ))
         (over all (and 
             (is_active ?train)
-            (train_operated ?train)
-            (is_direction_Bside ?train)
             (tracks_linked ?trackLeft ?trackRight)   
         ))
     )
